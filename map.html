@@ -123,6 +123,7 @@
       font-weight: 700;
       background: linear-gradient(135deg, #f59e0b, #ef4444, #f97316);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
     }
@@ -199,6 +200,7 @@
       display: flex;
       flex: 1;
       overflow: hidden;
+      position: relative;
     }
 
     #sidebar {
@@ -902,31 +904,289 @@
       letter-spacing: 0.04em;
     }
 
+    /* ── Sidebar Toggle Button (mobile) ── */
+    .sidebar-toggle {
+      display: none;
+      position: absolute;
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1001;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      padding: 4px 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+      transition: color 0.2s ease;
+    }
+
+    .sidebar-toggle:hover {
+      color: var(--text-primary);
+    }
+
+    .sidebar-drag-handle {
+      display: none;
+      width: 40px;
+      height: 4px;
+      background: var(--text-label);
+      border-radius: 2px;
+      margin: 8px auto 4px;
+      opacity: 0.5;
+    }
+
+    /* ── Geolocation Button ── */
+    .locate-btn {
+      position: absolute;
+      bottom: 90px;
+      right: 10px;
+      z-index: 999;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .locate-btn:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+      background: var(--bg-secondary);
+    }
+
+    .locate-btn.active {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    .locate-btn.loading {
+      animation: pulse-btn 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-btn {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    /* ── My Location Marker Pulse ── */
+    .my-location-marker {
+      width: 18px;
+      height: 18px;
+      background: #3b82f6;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+      animation: loc-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes loc-pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      70% {
+        box-shadow: 0 0 0 14px rgba(59, 130, 246, 0), 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0), 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    /* ── Toast Notification ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      z-index: 10001;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      transition: transform 0.3s ease;
+      max-width: 90vw;
+    }
+
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Mobile Responsive ── */
     @media (max-width: 768px) {
+      header {
+        padding: 10px 14px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      header h1 {
+        font-size: 1.1rem;
+      }
+
+      header span.subtitle {
+        display: none;
+      }
+
+      .theme-btn,
+      .view-btn {
+        padding: 8px 10px;
+        font-size: 0.68rem;
+        min-height: 36px;
+      }
+
+      .add-loc-btn {
+        padding: 8px 10px;
+        font-size: 0.72rem;
+        min-height: 36px;
+      }
+
       .container {
-        flex-direction: column-reverse;
+        flex-direction: column;
+        position: relative;
+      }
+
+      #map {
+        flex: 1;
+        min-height: 0;
       }
 
       #sidebar {
         width: 100%;
         min-width: unset;
-        max-height: 40vh;
+        max-height: 45vh;
         border-right: none;
         border-top: 1px solid var(--border-subtle);
+        position: relative;
+        transition: max-height 0.3s ease;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      #sidebar.collapsed {
+        max-height: 0;
+        overflow: hidden;
+        border-top: none;
+      }
+
+      .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .sidebar-drag-handle {
+        display: block;
       }
 
       .legend {
         bottom: auto;
-        top: 80px;
+        top: 10px;
+        right: 10px;
+        padding: 10px 14px;
+        font-size: 0.72rem;
+        max-width: 180px;
+      }
+
+      .legend h4 {
+        font-size: 0.62rem;
+      }
+
+      .legend-item {
+        font-size: 0.7rem;
+        gap: 6px;
+      }
+
+      .route-panel {
+        min-width: unset;
+        max-width: 90vw;
+        width: auto;
+        left: 50%;
+        top: 60px;
+        padding: 12px 16px;
+      }
+
+      .route-hint {
+        top: 60px;
+        font-size: 0.75rem;
+        padding: 8px 14px;
+      }
+
+      .locate-btn {
+        bottom: auto;
+        top: 10px;
         right: 10px;
       }
 
-      header {
-        flex-wrap: wrap;
+      .custom-popup .leaflet-popup-content-wrapper {
+        max-width: 260px;
       }
 
-      .theme-switcher {
-        margin-left: auto;
+      .planner-tab {
+        padding: 8px 10px;
+        font-size: 0.68rem;
+        min-height: 36px;
+      }
+
+      .planner-action-btn {
+        padding: 10px 6px;
+        font-size: 0.68rem;
+        min-height: 40px;
+      }
+
+      .modal-card {
+        width: 95vw;
+        max-height: 85vh;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header h1 {
+        font-size: 0.95rem;
+      }
+
+      .theme-btn,
+      .view-btn {
+        padding: 7px 8px;
+        font-size: 0.62rem;
+      }
+
+      .add-loc-btn {
+        font-size: 0.65rem;
+        padding: 7px 8px;
+      }
+
+      .legend {
+        display: none;
+      }
+
+      #sidebar {
+        max-height: 50vh;
+      }
+
+      .planner-actions {
+        flex-wrap: wrap;
       }
     }
 
@@ -1166,9 +1426,15 @@
   </header>
 
   <div class="container">
-    <div id="sidebar"></div>
     <div id="map"></div>
+    <button class="locate-btn" id="locate-btn" title="Find my location">📍</button>
+    <div id="sidebar">
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">▲</button>
+      <div class="sidebar-drag-handle"></div>
+    </div>
   </div>
+
+  <div id="toast" class="toast"></div>
 
   <div class="legend">
     <h4>Legend</h4>
@@ -1178,6 +1444,8 @@
     <div class="legend-item">🎡 Attractions / Towns</div>
     <div class="legend-item">⭐ Suggested (Family-Friendly)</div>
     <div class="legend-item">🟢 Evelyn's Picks</div>
+    <div class="legend-item">🍽️ Food & Dining</div>
+    <div class="legend-item">📌 Custom Locations</div>
     <div class="legend-item">
       <div class="legend-dot" style="background:rgba(99,102,241,0.4); border: 2px dashed #6366f1"></div> Route
     </div>
@@ -1884,6 +2152,38 @@
     // ── Sidebar ──
     const sidebar = document.getElementById('sidebar');
 
+    // Helper: set sidebar content while preserving toggle/drag handle
+    function setSidebarContent(html) {
+      const toggle = sidebar.querySelector('.sidebar-toggle');
+      const handle = sidebar.querySelector('.sidebar-drag-handle');
+      sidebar.innerHTML = html;
+      if (toggle) sidebar.prepend(handle, toggle);
+      else {
+        // Recreate if they were lost
+        const t = document.createElement('button');
+        t.className = 'sidebar-toggle';
+        t.id = 'sidebar-toggle';
+        t.title = 'Toggle sidebar';
+        t.textContent = sidebar.classList.contains('collapsed') ? '\u25B2' : '\u25BC';
+        const h = document.createElement('div');
+        h.className = 'sidebar-drag-handle';
+        sidebar.prepend(h);
+        sidebar.prepend(t);
+      }
+      wireSidebarToggle();
+    }
+
+    function wireSidebarToggle() {
+      const toggle = document.getElementById('sidebar-toggle');
+      if (!toggle) return;
+      toggle.onclick = () => {
+        sidebar.classList.toggle('collapsed');
+        toggle.textContent = sidebar.classList.contains('collapsed') ? '\u25B2' : '\u25BC';
+        // Invalidate map size after animation
+        setTimeout(() => map.invalidateSize(), 350);
+      };
+    }
+
     function buildSidebar() {
       const scheduled = locations.filter(l => l.day);
       const possible = locations.filter(l => !l.day);
@@ -1973,7 +2273,7 @@
         html += `</div>`;
       }
 
-      sidebar.innerHTML = html;
+      setSidebarContent(html);
       attachCardClicks();
     }
 
@@ -2093,7 +2393,7 @@
         html += `</div>`;
       });
 
-      sidebar.innerHTML = html;
+      setSidebarContent(html);
       attachCardClicks();
     }
 
@@ -2418,6 +2718,7 @@
     }
 
     let addDropdownOpen = false;
+    let myLocationData = null;  // Hoisted for planner access
 
     function buildDayPlanner() {
       const dayNum = plannerState.activeDay;
@@ -2450,6 +2751,10 @@
       html += `<div class="planner-label">🚗 Start Location</div>`;
       html += `<select class="planner-select" id="planner-start">`;
       html += `<option value="">— Select start —</option>`;
+      if (myLocationData) {
+        const sel = day.start === 'my-location' ? 'selected' : '';
+        html += `<optgroup label="📍 My Location"><option value="my-location" ${sel}>📍 My Current Location</option></optgroup>`;
+      }
       html += `<optgroup label="🏠 Hotels / Lodging">`;
       sortedForSelect.filter(l => l.type === 'hotel').forEach(loc => {
         const sel = day.start === loc.id ? 'selected' : '';
@@ -2506,6 +2811,10 @@
       html += `<div class="planner-label" style="margin-top:14px">🏁 End Location</div>`;
       html += `<select class="planner-select" id="planner-end">`;
       html += `<option value="">— Select end —</option>`;
+      if (myLocationData) {
+        const sel = day.end === 'my-location' ? 'selected' : '';
+        html += `<optgroup label="📍 My Location"><option value="my-location" ${sel}>📍 My Current Location</option></optgroup>`;
+      }
       html += `<optgroup label="🏠 Hotels / Lodging">`;
       sortedForSelect.filter(l => l.type === 'hotel').forEach(loc => {
         const sel = day.end === loc.id ? 'selected' : '';
@@ -2537,7 +2846,7 @@
 
       html += `</div>`; // close planner-day-content
 
-      sidebar.innerHTML = html;
+      setSidebarContent(html);
 
       // Wire up day tabs
       document.querySelectorAll('.planner-tab').forEach(tab => {
@@ -3192,6 +3501,78 @@
       map.flyTo([lat, lng], 12, { duration: 1 });
       setTimeout(() => marker.openPopup(), 1200);
     });
+
+    // ── Toast Helper ──
+    function showToast(msg, duration = 3000) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), duration);
+    }
+
+    // ── Geolocation / My Location ──
+    let myLocationMarker = null;
+
+    const locateBtn = document.getElementById('locate-btn');
+    if (locateBtn) {
+      locateBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          showToast('❌ Geolocation is not supported by your browser');
+          return;
+        }
+
+        locateBtn.classList.add('loading');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            myLocationData = { lat, lng };
+
+            // Remove old marker
+            if (myLocationMarker) map.removeLayer(myLocationMarker);
+
+            // Create pulsing blue marker
+            const locIcon = L.divIcon({
+              className: '',
+              html: '<div class="my-location-marker"></div>',
+              iconSize: [18, 18],
+              iconAnchor: [9, 9]
+            });
+            myLocationMarker = L.marker([lat, lng], { icon: locIcon, zIndexOffset: 2000 })
+              .addTo(map)
+              .bindPopup(`<div style="font-family:'Inter',sans-serif;text-align:center">
+                <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">📍 My Location</div>
+                <div style="font-size:0.75rem;color:var(--popup-detail)">${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+              </div>`, { className: 'custom-popup' });
+
+            // Register in markers so planner can use it for routes
+            markers['my-location'] = {
+              marker: myLocationMarker,
+              data: { id: 'my-location', name: 'My Current Location', lat, lng, type: 'custom' }
+            };
+
+            map.flyTo([lat, lng], 13, { duration: 1.2 });
+            locateBtn.classList.remove('loading');
+            locateBtn.classList.add('active');
+            showToast(`📍 Location found: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+
+            // Refresh planner to show My Location option
+            if (currentView === 'planner') buildDayPlanner();
+          },
+          (err) => {
+            locateBtn.classList.remove('loading');
+            const msgs = {
+              1: '❌ Location permission denied. Please enable location access.',
+              2: '❌ Location unavailable. Try again later.',
+              3: '⏳ Location request timed out. Try again.'
+            };
+            showToast(msgs[err.code] || '❌ Could not get location');
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+    }
 
   </script>
 </body>
