@@ -2229,6 +2229,16 @@ const newPlanName = document.getElementById('new-plan-name');
 const createPlanBtn = document.getElementById('create-plan-btn');
 const planListDiv = document.getElementById('plan-list');
 
+// Sanitize HTML attributes to prevent XSS
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function renderPlanList() {
   if (!planListDiv) return;
   
@@ -2236,15 +2246,17 @@ function renderPlanList() {
   Object.keys(allPlans).forEach(planId => {
     const plan = allPlans[planId];
     const isCurrent = planId === currentPlanId;
+    const safePlanId = escapeHtml(planId);
+    const safePlanName = escapeHtml(plan.name);
     html += `
-      <div class="plan-item ${isCurrent ? 'current' : ''}" data-plan-id="${planId}">
+      <div class="plan-item ${isCurrent ? 'current' : ''}" data-plan-id="${safePlanId}">
         <div class="plan-item-info">
-          <div class="plan-item-name">${plan.name}</div>
+          <div class="plan-item-name">${safePlanName}</div>
           ${isCurrent ? '<span class="plan-item-badge">Current</span>' : ''}
         </div>
         <div class="plan-item-actions">
-          ${!isCurrent ? `<button class="plan-item-btn" data-action="switch" data-plan-id="${planId}">Switch</button>` : ''}
-          ${planId !== 'default' ? `<button class="plan-item-btn danger" data-action="delete" data-plan-id="${planId}">Delete</button>` : ''}
+          ${!isCurrent ? `<button class="plan-item-btn" data-action="switch" data-plan-id="${safePlanId}">Switch</button>` : ''}
+          ${planId !== 'default' ? `<button class="plan-item-btn danger" data-action="delete" data-plan-id="${safePlanId}">Delete</button>` : ''}
         </div>
       </div>
     `;
@@ -2297,8 +2309,8 @@ createPlanBtn.addEventListener('click', () => {
     return;
   }
   
-  // Generate unique ID
-  const planId = 'plan_' + Date.now();
+  // Generate unique ID with additional entropy to prevent collisions
+  const planId = 'plan_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   
   // Create new plan
   allPlans[planId] = {
