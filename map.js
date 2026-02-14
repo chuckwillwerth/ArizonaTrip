@@ -958,23 +958,93 @@ const TRIP_DAYS = [
 let plannerState = { activeDay: 1, days: {} };
 TRIP_DAYS.forEach(d => { plannerState.days[d.num] = { start: null, end: null, stops: [] }; });
 
-// Load from localStorage
-try {
-  const saved = localStorage.getItem('arizonaTripPlanner');
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    if (parsed && parsed.days) {
-      plannerState = parsed;
+// ── Multiple Plans Management ──
+let allPlans = {}; // { planId: { name, data: plannerState } }
+let currentPlanId = 'default';
+
+function createEmptyPlan() {
+  const emptyPlan = { activeDay: 1, days: {} };
+  TRIP_DAYS.forEach(d => { emptyPlan.days[d.num] = { start: null, end: null, stops: [] }; });
+  return emptyPlan;
+}
+
+// Load all plans from localStorage
+function loadAllPlans() {
+  try {
+    const saved = localStorage.getItem('arizonaTripPlans');
+    if (saved) {
+      allPlans = JSON.parse(saved);
+    } else {
+      // Migrate old single plan to new format
+      const oldPlan = localStorage.getItem('arizonaTripPlanner');
+      if (oldPlan) {
+        const parsed = JSON.parse(oldPlan);
+        allPlans = {
+          'default': { name: 'Default Plan', data: parsed }
+        };
+        saveAllPlans();
+        localStorage.removeItem('arizonaTripPlanner'); // Clean up old format
+      } else {
+        allPlans = {
+          'default': { name: 'Default Plan', data: createEmptyPlan() }
+        };
+      }
+    }
+    
+    const savedCurrentId = localStorage.getItem('arizonaTripCurrentPlan');
+    if (savedCurrentId && allPlans[savedCurrentId]) {
+      currentPlanId = savedCurrentId;
+    }
+    
+    // Load current plan into plannerState
+    if (allPlans[currentPlanId]) {
+      plannerState = allPlans[currentPlanId].data;
       if (!plannerState.activeDay) plannerState.activeDay = 1;
     }
-  }
-} catch (e) { /* ignore */ }
+  } catch (e) { /* ignore */ }
+}
+
+function saveAllPlans() {
+  try {
+    localStorage.setItem('arizonaTripPlans', JSON.stringify(allPlans));
+  } catch (e) { /* ignore */ }
+}
 
 function savePlannerState() {
   try {
-    localStorage.setItem('arizonaTripPlanner', JSON.stringify(plannerState));
+    // Update current plan in allPlans
+    if (allPlans[currentPlanId]) {
+      allPlans[currentPlanId].data = plannerState;
+    }
+    saveAllPlans();
   } catch (e) { /* ignore */ }
 }
+
+function switchPlan(planId) {
+  if (!allPlans[planId]) return;
+  
+  // Save current plan
+  if (allPlans[currentPlanId]) {
+    allPlans[currentPlanId].data = plannerState;
+  }
+  
+  // Switch to new plan
+  currentPlanId = planId;
+  plannerState = JSON.parse(JSON.stringify(allPlans[planId].data)); // Deep copy
+  if (!plannerState.activeDay) plannerState.activeDay = 1;
+  
+  // Save current plan ID
+  localStorage.setItem('arizonaTripCurrentPlan', currentPlanId);
+  saveAllPlans();
+  
+  // Refresh UI
+  if (currentView === 'planner') {
+    buildDayPlanner();
+  }
+}
+
+// Initialize plans on load
+loadAllPlans();
 
 // Get all location IDs assigned to any day
 function getAssignedIds() {
@@ -2105,3 +2175,148 @@ if (locateBtn) {
     );
   });
 }
+// ── Plan Management UI ──
+function updatePlanSelector() {
+  const planSelect = document.getElementById('plan-select');
+  if (!planSelect) return;
+  
+  planSelect.innerHTML = '';
+  Object.keys(allPlans).forEach(planId => {
+    const option = document.createElement('option');
+    option.value = planId;
+    option.textContent = allPlans[planId].name;
+    if (planId === currentPlanId) option.selected = true;
+    planSelect.appendChild(option);
+  });
+}
+
+// Initialize plan selector
+updatePlanSelector();
+
+// Plan selector change handler
+const planSelect = document.getElementById('plan-select');
+if (planSelect) {
+  planSelect.addEventListener('change', (e) => {
+    switchPlan(e.target.value);
+    showToast(`✅ Switched to: ${allPlans[e.target.value].name}`);
+  });
+}
+
+// Plan management modal
+const planManageHTML = `
+<div class="modal-overlay" id="plan-manage-modal">
+  <div class="modal-card">
+    <h2>🗺️ Manage Plans</h2>
+    <div class="plan-list" id="plan-list"></div>
+    <div class="modal-field">
+      <label>Create New Plan</label>
+      <div class="modal-search-row">
+        <input type="text" id="new-plan-name" placeholder="e.g. Alternative Route" />
+        <button class="modal-search-btn" id="create-plan-btn">➕ Create</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="plan-manage-close">Close</button>
+    </div>
+  </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend', planManageHTML);
+
+const planManageModal = document.getElementById('plan-manage-modal');
+const planManageBtn = document.getElementById('plan-manage-btn');
+const planManageClose = document.getElementById('plan-manage-close');
+const newPlanName = document.getElementById('new-plan-name');
+const createPlanBtn = document.getElementById('create-plan-btn');
+const planListDiv = document.getElementById('plan-list');
+
+function renderPlanList() {
+  if (!planListDiv) return;
+  
+  let html = '';
+  Object.keys(allPlans).forEach(planId => {
+    const plan = allPlans[planId];
+    const isCurrent = planId === currentPlanId;
+    html += `
+      <div class="plan-item ${isCurrent ? 'current' : ''}" data-plan-id="${planId}">
+        <div class="plan-item-info">
+          <div class="plan-item-name">${plan.name}</div>
+          ${isCurrent ? '<span class="plan-item-badge">Current</span>' : ''}
+        </div>
+        <div class="plan-item-actions">
+          ${!isCurrent ? `<button class="plan-item-btn" data-action="switch" data-plan-id="${planId}">Switch</button>` : ''}
+          ${planId !== 'default' ? `<button class="plan-item-btn danger" data-action="delete" data-plan-id="${planId}">Delete</button>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  
+  planListDiv.innerHTML = html;
+  
+  // Add event listeners
+  planListDiv.querySelectorAll('.plan-item-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      const planId = e.target.dataset.planId;
+      
+      if (action === 'switch') {
+        switchPlan(planId);
+        updatePlanSelector();
+        renderPlanList();
+        showToast(`✅ Switched to: ${allPlans[planId].name}`);
+      } else if (action === 'delete') {
+        if (confirm(`Delete plan "${allPlans[planId].name}"? This cannot be undone.`)) {
+          delete allPlans[planId];
+          saveAllPlans();
+          renderPlanList();
+          updatePlanSelector();
+          showToast(`🗑️ Plan deleted`);
+        }
+      }
+    });
+  });
+}
+
+planManageBtn.addEventListener('click', () => {
+  planManageModal.classList.add('open');
+  renderPlanList();
+  newPlanName.value = '';
+});
+
+planManageClose.addEventListener('click', () => {
+  planManageModal.classList.remove('open');
+});
+
+planManageModal.addEventListener('click', (e) => {
+  if (e.target === planManageModal) planManageModal.classList.remove('open');
+});
+
+createPlanBtn.addEventListener('click', () => {
+  const name = newPlanName.value.trim();
+  if (!name) {
+    showToast('⚠️ Please enter a plan name');
+    return;
+  }
+  
+  // Generate unique ID
+  const planId = 'plan_' + Date.now();
+  
+  // Create new plan
+  allPlans[planId] = {
+    name: name,
+    data: createEmptyPlan()
+  };
+  
+  saveAllPlans();
+  updatePlanSelector();
+  renderPlanList();
+  newPlanName.value = '';
+  
+  showToast(`✅ Created: ${name}`);
+});
+
+newPlanName.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    createPlanBtn.click();
+  }
+});
