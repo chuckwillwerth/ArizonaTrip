@@ -10,10 +10,11 @@
 //    - More accurate, matches Google Maps results
 //    - To use: Set provider to 'google' and add your API key below
 //    - Get key at: https://console.cloud.google.com/google/maps-apis/
+//    - Uses Google Maps JavaScript SDK (client-side compatible)
 //
 const routingConfig = {
   provider: localStorage.getItem('routingProvider') || 'osrm', // 'osrm' (free) or 'google' (requires API key)
-  googleMapsApiKey: 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU', // Add your Google Maps API key here for more accurate routing
+  googleMapsApiKey: '', // REPLACE WITH YOUR GOOGLE MAPS API KEY - Get one at: https://console.cloud.google.com/google/maps-apis/
   osrmServer: 'https://router.project-osrm.org'
 };
 
@@ -1108,46 +1109,72 @@ async function fetchOSRMRoute(waypoints) {
 }
 
 async function fetchGoogleRoute(waypoints) {
-  if (!routingConfig.googleMapsApiKey || routingConfig.googleMapsApiKey.trim() === '') {
-    throw new Error('Google Maps API key not configured');
+  // Try to get API key from localStorage first, then fall back to routingConfig
+  const apiKey = localStorage.getItem('googleMapsApiKey') || routingConfig.googleMapsApiKey;
+  
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('Google Maps API key not configured. Please set it in map.js (routingConfig.googleMapsApiKey) or via localStorage.setItem("googleMapsApiKey", "YOUR_KEY")');
   }
   
-  const origin = encodeURIComponent(`${waypoints[0].lat},${waypoints[0].lng}`);
-  const destination = encodeURIComponent(`${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lng}`);
-  const waypointsParam = waypoints.length > 2
-    ? waypoints.slice(1, -1).map(w => encodeURIComponent(`${w.lat},${w.lng}`)).join('|')
-    : '';
-  
-  let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${encodeURIComponent(routingConfig.googleMapsApiKey)}`;
-  if (waypointsParam) {
-    url += `&waypoints=${waypointsParam}`;
+  // Load Google Maps API if not already loaded
+  if (!window.google || !window.google.maps) {
+    try {
+      await window.loadGoogleMapsAPI(apiKey);
+    } catch (error) {
+      throw new Error('Failed to load Google Maps API: ' + error.message);
+    }
   }
   
-  const resp = await fetch(url);
-  const data = await resp.json();
-  
-  if (data.status !== 'OK' || !data.routes || !data.routes[0]) {
-    throw new Error(`Google Maps routing failed: ${data.status}${data.error_message ? ' - ' + data.error_message : ''}`);
-  }
-  
-  const route = data.routes[0];
-  
-  // Sum up all legs for total distance and duration
-  let totalDistance = 0;
-  let totalDuration = 0;
-  route.legs.forEach(leg => {
-    totalDistance += leg.distance.value; // meters
-    totalDuration += leg.duration.value; // seconds
+  // Use Google Maps DirectionsService (client-side API)
+  return new Promise((resolve, reject) => {
+    const directionsService = new google.maps.DirectionsService();
+    
+    const origin = new google.maps.LatLng(waypoints[0].lat, waypoints[0].lng);
+    const destination = new google.maps.LatLng(waypoints[waypoints.length - 1].lat, waypoints[waypoints.length - 1].lng);
+    
+    const request = {
+      origin,
+      destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
+    
+    // Add waypoints if there are intermediate points
+    if (waypoints.length > 2) {
+      request.waypoints = waypoints.slice(1, -1).map(w => ({
+        location: new google.maps.LatLng(w.lat, w.lng),
+        stopover: true
+      }));
+    }
+    
+    directionsService.route(request, (result, status) => {
+      if (status !== google.maps.DirectionsStatus.OK) {
+        reject(new Error(`Google Maps routing failed: ${status}`));
+        return;
+      }
+      
+      const route = result.routes[0];
+      
+      // Sum up all legs for total distance and duration
+      let totalDistance = 0;
+      let totalDuration = 0;
+      route.legs.forEach(leg => {
+        totalDistance += leg.distance.value; // meters
+        totalDuration += leg.duration.value; // seconds
+      });
+      
+      // Extract points from the route path
+      const points = [];
+      route.overview_path.forEach(point => {
+        points.push([point.lat(), point.lng()]);
+      });
+      
+      resolve({
+        distance: totalDistance,
+        duration: totalDuration,
+        geometry: points
+      });
+    });
   });
-  
-  // Decode polyline for geometry
-  const points = decodeGooglePolyline(route.overview_polyline.points);
-  
-  return {
-    distance: totalDistance,
-    duration: totalDuration,
-    geometry: points
-  };
 }
 
 // Decode Google Maps polyline encoding

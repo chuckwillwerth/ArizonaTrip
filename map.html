@@ -79,6 +79,32 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Load Google Maps API asynchronously when needed
+    window.loadGoogleMapsAPI = function(apiKey) {
+      return new Promise((resolve, reject) => {
+        if (window.google && window.google.maps) {
+          resolve();
+          return;
+        }
+        
+        if (!apiKey || apiKey.trim() === '') {
+          reject(new Error('Google Maps API key not configured. Please set it in map.js (routingConfig.googleMapsApiKey) or via localStorage.setItem("googleMapsApiKey", "YOUR_KEY")'));
+          return;
+        }
+        
+        window.initGoogleMaps = function() {
+          delete window.initGoogleMaps;
+          resolve();
+        };
+        
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMaps`;
+        script.onerror = () => reject(new Error('Failed to load Google Maps API'));
+        document.head.appendChild(script);
+      });
+    };
+  </script>
   <script src="map.js"></script>
 </body>
 
