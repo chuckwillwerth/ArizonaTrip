@@ -1117,7 +1117,7 @@ header span.subtitle {
   #sidebar {
     width: 100%;
     min-width: unset;
-    max-height: 45vh;
+    max-height: 30vh;
     border-right: none;
     border-top: 1px solid var(--border-subtle);
     position: relative;
@@ -1223,7 +1223,7 @@ header span.subtitle {
   }
 
   #sidebar {
-    max-height: 50vh;
+    max-height: 35vh;
   }
 
   .planner-actions {
