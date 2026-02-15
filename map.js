@@ -1694,6 +1694,16 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 
 buildSidebar();
 
+// Collapse sidebar by default on mobile for better map view
+if (window.innerWidth <= 768) {
+  const sidebar = document.getElementById('sidebar');
+  const toggle = document.getElementById('sidebar-toggle');
+  if (sidebar && toggle) {
+    sidebar.classList.add('collapsed');
+    toggle.textContent = '\u25B2'; // up arrow
+  }
+}
+
 // Fit map to all markers
 const allCoords = locations.map(l => [l.lat, l.lng]);
 map.fitBounds(allCoords, { padding: [50, 50] });
