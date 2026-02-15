@@ -32,17 +32,27 @@ For routing that matches Google Maps results exactly:
    - Enable the "Directions API"
    - Create an API key with appropriate restrictions
 
-2. Configure the app:
+2. Configure the app (Choose one method):
+   
+   **Method A: Direct Configuration**
    - Open `map.js`
    - Find the `routingConfig` section at the top
-   - Set `provider: 'google'`
    - Add your API key: `googleMapsApiKey: 'YOUR_API_KEY_HERE'`
+   
+   **Method B: LocalStorage (Keeps key out of code)**
+   - Open browser console on the map page
+   - Run: `localStorage.setItem('googleMapsApiKey', 'YOUR_API_KEY_HERE')`
+   - Reload the page
 
-Example configuration:
+3. Switch routing provider:
+   - Click the "🌐 Google" button in the map interface, or
+   - Set `provider: 'google'` in `routingConfig` in map.js
+
+Example configuration (Method A):
 ```javascript
 const routingConfig = {
   provider: 'google',  // Changed from 'osrm'
-  googleMapsApiKey: 'AIza...YOUR_KEY...', // Add your key
+  googleMapsApiKey: 'AIza...YOUR_KEY...', // Add your key here
   osrmServer: 'https://router.project-osrm.org'
 };
 ```

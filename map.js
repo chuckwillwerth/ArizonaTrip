@@ -14,7 +14,7 @@
 //
 const routingConfig = {
   provider: localStorage.getItem('routingProvider') || 'osrm', // 'osrm' (free) or 'google' (requires API key)
-  googleMapsApiKey: 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU', // Add your Google Maps API key here for more accurate routing
+  googleMapsApiKey: '', // REPLACE WITH YOUR GOOGLE MAPS API KEY - Get one at: https://console.cloud.google.com/google/maps-apis/
   osrmServer: 'https://router.project-osrm.org'
 };
 
@@ -1109,8 +1109,16 @@ async function fetchOSRMRoute(waypoints) {
 }
 
 async function fetchGoogleRoute(waypoints) {
-  if (!routingConfig.googleMapsApiKey || routingConfig.googleMapsApiKey.trim() === '') {
-    throw new Error('Google Maps API key not configured');
+  // Try to get API key from localStorage first, then fall back to routingConfig
+  const apiKey = localStorage.getItem('googleMapsApiKey') || routingConfig.googleMapsApiKey;
+  
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('Google Maps API key not configured. Please set it in map.js (routingConfig.googleMapsApiKey) or via localStorage.setItem("googleMapsApiKey", "YOUR_KEY")');
+  }
+  
+  // Store in localStorage for the HTML loader to use
+  if (!localStorage.getItem('googleMapsApiKey') && routingConfig.googleMapsApiKey) {
+    localStorage.setItem('googleMapsApiKey', routingConfig.googleMapsApiKey);
   }
   
   // Load Google Maps API if not already loaded
@@ -1130,8 +1138,8 @@ async function fetchGoogleRoute(waypoints) {
     const destination = new google.maps.LatLng(waypoints[waypoints.length - 1].lat, waypoints[waypoints.length - 1].lng);
     
     const request = {
-      origin: origin,
-      destination: destination,
+      origin,
+      destination,
       travelMode: google.maps.TravelMode.DRIVING,
     };
     

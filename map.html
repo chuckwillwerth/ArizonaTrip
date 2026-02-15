@@ -94,8 +94,13 @@
         };
         
         const script = document.createElement('script');
-        // API key will be read from routingConfig in map.js
-        const apiKey = localStorage.getItem('googleMapsApiKey') || 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU';
+        // API key is read from routingConfig in map.js
+        // For testing: set via localStorage.setItem('googleMapsApiKey', 'YOUR_KEY')
+        const apiKey = localStorage.getItem('googleMapsApiKey') || '';
+        if (!apiKey) {
+          reject(new Error('Google Maps API key not configured. Set routingConfig.googleMapsApiKey in map.js or use localStorage.setItem("googleMapsApiKey", "YOUR_KEY")'));
+          return;
+        }
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMaps`;
         script.onerror = () => reject(new Error('Failed to load Google Maps API'));
         document.head.appendChild(script);
