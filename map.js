@@ -1129,12 +1129,14 @@ async function fetchGoogleRoute(waypoints) {
   return new Promise((resolve, reject) => {
     const directionsService = new google.maps.DirectionsService();
     
+    // Create LatLng objects for origin and destination
     const origin = new google.maps.LatLng(waypoints[0].lat, waypoints[0].lng);
     const destination = new google.maps.LatLng(waypoints[waypoints.length - 1].lat, waypoints[waypoints.length - 1].lng);
     
+    // Build the directions request (using ES6 property shorthand)
     const request = {
-      origin,
-      destination,
+      origin,       // google.maps.LatLng object
+      destination,  // google.maps.LatLng object
       travelMode: google.maps.TravelMode.DRIVING,
     };
     

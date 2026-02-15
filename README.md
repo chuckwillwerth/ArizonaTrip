@@ -90,7 +90,7 @@ Since this is a client-side application, the API key will be visible in the brow
    - Client calls your backend instead of Google directly
    - This keeps the API key completely hidden
 
-**Note**: The current implementation uses the Google Maps JavaScript SDK, which is designed for client-side use and works properly with HTTP referrer restrictions. The previous implementation attempted direct API calls which were blocked by CORS.
+**Note**: This implementation uses the Google Maps JavaScript SDK, which is designed for client-side use and works properly with HTTP referrer restrictions.
 
 
 ## Why the Difference?
