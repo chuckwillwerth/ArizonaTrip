@@ -1,3 +1,8 @@
+// ── OSRM Route Duration Correction Factor ──
+// OSRM provides optimistic drive times. Apply 1.25x correction to match Google Maps
+// which accounts for real traffic, winding roads, speed variations, and realistic driving
+const OSRM_DURATION_CORRECTION = 1.25;
+
 // ── Location Data ──
 const locations = [
   // Itinerary stops
@@ -1084,7 +1089,8 @@ async function calcPlannerRoute(dayNum) {
     if (data.code === 'Ok' && data.routes && data.routes[0]) {
       const route = data.routes[0];
       plannerRouteStats.distance = route.distance;
-      plannerRouteStats.duration = route.duration;
+      // Apply correction factor to OSRM duration for more realistic estimates
+      plannerRouteStats.duration = route.duration * OSRM_DURATION_CORRECTION;
       const geojsonCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
       plannerRouteLine = L.polyline(geojsonCoords, {
         color: '#6366f1',
@@ -1197,7 +1203,8 @@ async function calcSuggestions(dayNum) {
     sugHtml += `<div class="suggest-title">💡 Nearby Suggestions</div>`;
     top5.forEach(s => {
       const cfg = typeConfig[s.loc.type] || typeConfig.nature;
-      const extraMin = Math.round(s.extra / 60);
+      // Apply correction factor to OSRM duration for more realistic estimates
+      const extraMin = Math.round((s.extra * OSRM_DURATION_CORRECTION) / 60);
       const extraStr = extraMin <= 0 ? 'On route!' : `+${extraMin} min`;
       sugHtml += `<div class="suggest-item" data-suggest-id="${s.loc.id}" title="${s.loc.name} — adds ~${extraMin} min">`;
       sugHtml += `<span class="suggest-emoji">${cfg.emoji}</span>`;
@@ -1824,7 +1831,9 @@ async function fetchDrivingRoute(start, end) {
 
     // Calculate stats
     const distanceMiles = (route.distance / 1609.344).toFixed(1);
-    const durationMin = Math.round(route.duration / 60);
+    // Apply correction factor to OSRM duration for more realistic estimates
+    const correctedDuration = route.duration * OSRM_DURATION_CORRECTION;
+    const durationMin = Math.round(correctedDuration / 60);
     const hours = Math.floor(durationMin / 60);
     const mins = durationMin % 60;
     const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
