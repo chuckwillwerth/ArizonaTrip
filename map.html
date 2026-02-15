@@ -81,10 +81,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Load Google Maps API asynchronously when needed
-    window.loadGoogleMapsAPI = function() {
+    window.loadGoogleMapsAPI = function(apiKey) {
       return new Promise((resolve, reject) => {
         if (window.google && window.google.maps) {
           resolve();
+          return;
+        }
+        
+        if (!apiKey || apiKey.trim() === '') {
+          reject(new Error('Google Maps API key not configured. Please set it in map.js (routingConfig.googleMapsApiKey) or via localStorage.setItem("googleMapsApiKey", "YOUR_KEY")'));
           return;
         }
         
@@ -94,13 +99,6 @@
         };
         
         const script = document.createElement('script');
-        // API key is read from routingConfig in map.js
-        // For testing: set via localStorage.setItem('googleMapsApiKey', 'YOUR_KEY')
-        const apiKey = localStorage.getItem('googleMapsApiKey') || '';
-        if (!apiKey) {
-          reject(new Error('Google Maps API key not configured. Set routingConfig.googleMapsApiKey in map.js or use localStorage.setItem("googleMapsApiKey", "YOUR_KEY")'));
-          return;
-        }
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMaps`;
         script.onerror = () => reject(new Error('Failed to load Google Maps API'));
         document.head.appendChild(script);

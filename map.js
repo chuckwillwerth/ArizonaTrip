@@ -1116,15 +1116,10 @@ async function fetchGoogleRoute(waypoints) {
     throw new Error('Google Maps API key not configured. Please set it in map.js (routingConfig.googleMapsApiKey) or via localStorage.setItem("googleMapsApiKey", "YOUR_KEY")');
   }
   
-  // Store in localStorage for the HTML loader to use
-  if (!localStorage.getItem('googleMapsApiKey') && routingConfig.googleMapsApiKey) {
-    localStorage.setItem('googleMapsApiKey', routingConfig.googleMapsApiKey);
-  }
-  
   // Load Google Maps API if not already loaded
   if (!window.google || !window.google.maps) {
     try {
-      await window.loadGoogleMapsAPI();
+      await window.loadGoogleMapsAPI(apiKey);
     } catch (error) {
       throw new Error('Failed to load Google Maps API: ' + error.message);
     }
