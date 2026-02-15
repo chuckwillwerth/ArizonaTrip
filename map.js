@@ -1854,6 +1854,21 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 });
 
 // ── Routing Provider Switcher Logic ──
+// Helper function to update routing button active states
+function updateRoutingButtonStates(activeProvider) {
+  document.querySelectorAll('.routing-btn').forEach(btn => {
+    if (btn.dataset.routing === activeProvider) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+// Initialize the routing provider buttons based on saved preference
+updateRoutingButtonStates(routingConfig.provider);
+
+// Handle routing provider button clicks
 document.querySelectorAll('.routing-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const provider = btn.dataset.routing;
@@ -1864,8 +1879,7 @@ document.querySelectorAll('.routing-btn').forEach(btn => {
     localStorage.setItem('routingProvider', provider);
 
     // Update active button
-    document.querySelectorAll('.routing-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    updateRoutingButtonStates(provider);
 
     // Show toast notification
     const providerName = provider === 'google' ? 'Google Maps' : 'OSRM (Open Source)';
@@ -1881,15 +1895,6 @@ document.querySelectorAll('.routing-btn').forEach(btn => {
       calcPlannerRoute(plannerState.activeDay);
     }
   });
-});
-
-// Initialize the routing provider buttons based on saved preference
-document.querySelectorAll('.routing-btn').forEach(btn => {
-  if (btn.dataset.routing === routingConfig.provider) {
-    btn.classList.add('active');
-  } else {
-    btn.classList.remove('active');
-  }
 });
 
 // ── Click-to-Route Feature ──
