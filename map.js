@@ -12,7 +12,7 @@
 //    - Get key at: https://console.cloud.google.com/google/maps-apis/
 //
 const routingConfig = {
-  provider: 'google', // 'osrm' (free) or 'google' (requires API key)
+  provider: localStorage.getItem('routingProvider') || 'osrm', // 'osrm' (free) or 'google' (requires API key)
   googleMapsApiKey: 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU', // Add your Google Maps API key here for more accurate routing
   osrmServer: 'https://router.project-osrm.org'
 };
@@ -1851,6 +1851,45 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
     const ro = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--route-opacity').trim());
     routeLine.setStyle({ color: rc, opacity: ro });
   });
+});
+
+// ── Routing Provider Switcher Logic ──
+document.querySelectorAll('.routing-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const provider = btn.dataset.routing;
+    if (provider === routingConfig.provider) return;
+
+    // Update the provider
+    routingConfig.provider = provider;
+    localStorage.setItem('routingProvider', provider);
+
+    // Update active button
+    document.querySelectorAll('.routing-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Show toast notification
+    const providerName = provider === 'google' ? 'Google Maps' : 'OSRM (Open Source)';
+    showToast(`📍 Routing provider changed to ${providerName}`);
+
+    // If there's an active route, recalculate it with the new provider
+    if (routeStart && routeEnd) {
+      fetchDrivingRoute(routeStart, routeEnd);
+    }
+
+    // If there's an active planner route, recalculate it
+    if (currentView === 'planner' && plannerState.activeDay !== null) {
+      calcPlannerRoute(plannerState.activeDay);
+    }
+  });
+});
+
+// Initialize the routing provider buttons based on saved preference
+document.querySelectorAll('.routing-btn').forEach(btn => {
+  if (btn.dataset.routing === routingConfig.provider) {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
 });
 
 // ── Click-to-Route Feature ──
