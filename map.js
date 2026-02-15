@@ -12,8 +12,8 @@
 //    - Get key at: https://console.cloud.google.com/google/maps-apis/
 //
 const routingConfig = {
-  provider: 'osrm', // 'osrm' (free) or 'google' (requires API key)
-  googleMapsApiKey: '', // Add your Google Maps API key here for more accurate routing
+  provider: 'google', // 'osrm' (free) or 'google' (requires API key)
+  googleMapsApiKey: 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU', // Add your Google Maps API key here for more accurate routing
   osrmServer: 'https://router.project-osrm.org'
 };
 
