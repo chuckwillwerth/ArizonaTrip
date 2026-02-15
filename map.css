@@ -186,6 +186,31 @@ header span.subtitle {
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
+.routing-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.routing-btn:hover {
+  color: var(--text-primary);
+  background: var(--card-hover);
+}
+
+.routing-btn.active {
+  background: #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
 /* ── Plan Selector ── */
 .plan-selector {
   display: flex;

@@ -12,7 +12,7 @@
 //    - Get key at: https://console.cloud.google.com/google/maps-apis/
 //
 const routingConfig = {
-  provider: 'google', // 'osrm' (free) or 'google' (requires API key)
+  provider: localStorage.getItem('routingProvider') || 'osrm', // 'osrm' (free) or 'google' (requires API key)
   googleMapsApiKey: 'AIzaSyCExmLKD8OHFGuRnGdGt4Vtu7NlDECDvjU', // Add your Google Maps API key here for more accurate routing
   osrmServer: 'https://router.project-osrm.org'
 };
@@ -1850,6 +1850,50 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
     const rc = getComputedStyle(document.documentElement).getPropertyValue('--route-color').trim();
     const ro = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--route-opacity').trim());
     routeLine.setStyle({ color: rc, opacity: ro });
+  });
+});
+
+// ── Routing Provider Switcher Logic ──
+// Helper function to update routing button active states
+function updateRoutingButtonStates(activeProvider) {
+  document.querySelectorAll('.routing-btn').forEach(btn => {
+    if (btn.dataset.routing === activeProvider) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+// Initialize the routing provider buttons based on saved preference
+updateRoutingButtonStates(routingConfig.provider);
+
+// Handle routing provider button clicks
+document.querySelectorAll('.routing-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const provider = btn.dataset.routing;
+    if (provider === routingConfig.provider) return;
+
+    // Update the provider
+    routingConfig.provider = provider;
+    localStorage.setItem('routingProvider', provider);
+
+    // Update active button
+    updateRoutingButtonStates(provider);
+
+    // Show toast notification
+    const providerName = provider === 'google' ? 'Google Maps' : 'OSRM (Open Source)';
+    showToast(`📍 Routing provider changed to ${providerName}`);
+
+    // If there's an active route, recalculate it with the new provider
+    if (routeStart && routeEnd) {
+      fetchDrivingRoute(routeStart, routeEnd);
+    }
+
+    // If there's an active planner route, recalculate it
+    if (currentView === 'planner' && plannerState.activeDay !== null) {
+      calcPlannerRoute(plannerState.activeDay);
+    }
   });
 });
 
