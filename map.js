@@ -2561,46 +2561,19 @@ document.getElementById('export-gmaps-btn')?.addEventListener('click', () => {
     return;
   }
   
-  // Google Maps URL format for multiple waypoints
-  // https://www.google.com/maps/dir/?api=1&destination=LAT,LNG&waypoints=LAT1,LNG1|LAT2,LNG2|...
-  // For multiple markers without a route, we use a search query
-  // https://www.google.com/maps/search/?api=1&query=LAT1,LNG1&query=LAT2,LNG2
-  
-  // Option 1: Create a custom Google My Maps URL with multiple markers
-  // This approach uses a search query for each location
-  
-  // Option 2: Use the simpler approach with markers using search
-  // Build a URL that shows all locations
-  // The best approach is to create a URL with all markers using the search parameter
-  
-  // Google Maps supports up to 10 waypoints in a directions URL
-  // For more locations, we'll create a custom "My Maps" style URL or use search
-  
-  // Let's use the search approach - open a map centered on the locations
-  // and include them as search queries (limited but works)
-  
-  // Better approach: Create a URL that can be used to save to Google Maps
-  // using the Data URI with KML or using multiple search queries
-  
-  // Simplest working solution: Create a URL with the first location and 
-  // show a message about how to add others, OR create a directions URL
-  
-  // Let's create a directions URL with up to 10 waypoints
+  // Export locations to Google Maps
+  // For a single location, create a search URL
+  // For multiple locations, create a directions URL with waypoints (supports up to 25 locations total)
   if (locationsToExport.length === 1) {
-    // Single location - just show it on the map
     const loc = locationsToExport[0];
     const url = `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
     window.open(url, '_blank');
     showToast('🗺️ Opened in Google Maps');
   } else {
-    // Multiple locations - create a route or multiple markers
-    // Google Maps directions API supports: origin, destination, and up to 25 waypoints (in paid tier)
-    // Free tier: up to 10 waypoints
-    
-    // Let's create a directions URL with waypoints
+    // Create a directions URL: origin + destination + up to 23 waypoints (25 total locations max)
     const origin = locationsToExport[0];
     const destination = locationsToExport[locationsToExport.length - 1];
-    const waypoints = locationsToExport.slice(1, -1).slice(0, 23); // Max 23 waypoints (25 total - origin - destination)
+    const waypoints = locationsToExport.slice(1, -1).slice(0, 23);
     
     let url = `https://www.google.com/maps/dir/?api=1`;
     url += `&origin=${origin.lat},${origin.lng}`;
