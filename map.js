@@ -1695,7 +1695,7 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 buildSidebar();
 
 // Collapse sidebar by default on mobile for better map view
-if (window.innerWidth <= 768) {
+if (window.matchMedia('(max-width: 768px)').matches) {
   const sidebar = document.getElementById('sidebar');
   const toggle = document.getElementById('sidebar-toggle');
   if (sidebar && toggle) {
