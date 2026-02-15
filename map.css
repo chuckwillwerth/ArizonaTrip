@@ -1133,6 +1133,12 @@ header span.subtitle {
     min-height: 36px;
   }
 
+  .export-gmaps-btn {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    min-height: 36px;
+  }
+
   .container {
     flex-direction: column;
     position: relative;
@@ -1257,6 +1263,11 @@ header span.subtitle {
     padding: 7px 8px;
   }
 
+  .export-gmaps-btn {
+    font-size: 0.65rem;
+    padding: 7px 8px;
+  }
+
   .legend {
     display: none;
   }
@@ -1289,6 +1300,27 @@ header span.subtitle {
   border-color: #6366f1;
   color: #6366f1;
   background: rgba(99, 102, 241, 0.06);
+}
+
+/* ── Export to Google Maps Button ── */
+.export-gmaps-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-gmaps-btn:hover {
+  border-color: #4285f4;
+  color: #4285f4;
+  background: rgba(66, 133, 244, 0.06);
 }
 
 .modal-overlay {

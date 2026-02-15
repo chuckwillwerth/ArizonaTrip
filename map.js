@@ -2521,3 +2521,75 @@ newPlanName.addEventListener('keydown', (e) => {
     createPlanBtn.click();
   }
 });
+
+// ── Export to Google Maps ──
+document.getElementById('export-gmaps-btn')?.addEventListener('click', () => {
+  // Get locations to export based on current view
+  let locationsToExport = [];
+  
+  if (currentView === 'evelyn') {
+    // Export only Evelyn's locations
+    locationsToExport = locations.filter(loc => loc.type === 'evelyn');
+  } else if (currentView === 'planner' && plannerState.activeDay !== null) {
+    // Export locations from the active day in planner
+    const dayKey = `day${plannerState.activeDay}`;
+    const dayData = allPlans[currentPlanId]?.data?.[dayKey];
+    if (dayData?.stops) {
+      const stopIds = dayData.stops.map(s => s.id);
+      locationsToExport = locations.filter(loc => stopIds.includes(loc.id));
+    }
+  } else if (currentView === 'planner') {
+    // Export all locations in the current plan
+    const planData = allPlans[currentPlanId]?.data;
+    if (planData) {
+      const allStopIds = new Set();
+      for (let i = 1; i <= 6; i++) {
+        const dayData = planData[`day${i}`];
+        if (dayData?.stops) {
+          dayData.stops.forEach(stop => allStopIds.add(stop.id));
+        }
+      }
+      locationsToExport = locations.filter(loc => allStopIds.has(loc.id));
+    }
+  } else {
+    // Export all locations (default 'all' view)
+    locationsToExport = locations;
+  }
+  
+  if (locationsToExport.length === 0) {
+    showToast('⚠️ No locations to export');
+    return;
+  }
+  
+  // Export locations to Google Maps
+  // For a single location, create a search URL
+  // For multiple locations, create a directions URL with waypoints (supports up to 25 locations total)
+  if (locationsToExport.length === 1) {
+    const loc = locationsToExport[0];
+    const url = `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
+    window.open(url, '_blank');
+    showToast('🗺️ Opened in Google Maps');
+  } else {
+    // Create a directions URL: origin + destination + up to 23 waypoints (25 total locations max)
+    const origin = locationsToExport[0];
+    const destination = locationsToExport[locationsToExport.length - 1];
+    const waypoints = locationsToExport.slice(1, -1).slice(0, 23);
+    
+    let url = `https://www.google.com/maps/dir/?api=1`;
+    url += `&origin=${origin.lat},${origin.lng}`;
+    url += `&destination=${destination.lat},${destination.lng}`;
+    
+    if (waypoints.length > 0) {
+      const waypointStr = waypoints.map(loc => `${loc.lat},${loc.lng}`).join('|');
+      url += `&waypoints=${encodeURIComponent(waypointStr)}`;
+    }
+    
+    window.open(url, '_blank');
+    
+    if (locationsToExport.length > 25) {
+      showToast(`🗺️ Opened ${Math.min(25, locationsToExport.length)} of ${locationsToExport.length} locations in Google Maps`);
+    } else {
+      showToast(`🗺️ Opened ${locationsToExport.length} locations in Google Maps`);
+    }
+  }
+});
