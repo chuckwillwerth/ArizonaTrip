@@ -949,24 +949,29 @@ header span.subtitle {
 .sidebar-toggle {
   display: none;
   position: absolute;
-  top: -36px;
+  top: -48px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1001;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  background: #6366f1;
+  border: 2px solid #4f46e5;
   border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  padding: 4px 20px;
+  border-radius: 12px 12px 0 0;
+  padding: 8px 24px;
   cursor: pointer;
-  color: var(--text-muted);
-  font-size: 1rem;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  transition: color 0.2s ease;
+  color: #ffffff;
+  font-size: 1.2rem;
+  box-shadow: 0 -4px 16px rgba(99, 102, 241, 0.4), 0 -2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  min-width: 60px;
+  min-height: 40px;
+  font-weight: 600;
 }
 
 .sidebar-toggle:hover {
-  color: var(--text-primary);
+  background: #4f46e5;
+  box-shadow: 0 -6px 20px rgba(99, 102, 241, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .sidebar-drag-handle {
@@ -1135,6 +1140,16 @@ header span.subtitle {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    z-index: 1002;
+  }
+
+  #sidebar.collapsed .sidebar-toggle {
+    bottom: 10px;
   }
 
   .sidebar-drag-handle {
