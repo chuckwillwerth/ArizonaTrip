@@ -1080,7 +1080,10 @@ function getAssignedIds() {
 // Switch between OSRM (free, may differ from Google Maps) and Google Maps (requires API key)
 // Configure via routingConfig at the top of this file
 async function fetchRoute(waypoints) {
-  if (routingConfig.provider === 'google' && routingConfig.googleMapsApiKey) {
+  if (routingConfig.provider === 'google') {
+    if (!routingConfig.googleMapsApiKey || routingConfig.googleMapsApiKey.trim() === '') {
+      throw new Error('Google Maps provider selected but API key is missing. Please add your API key to routingConfig.');
+    }
     return await fetchGoogleRoute(waypoints);
   }
   return await fetchOSRMRoute(waypoints);
@@ -1105,17 +1108,17 @@ async function fetchOSRMRoute(waypoints) {
 }
 
 async function fetchGoogleRoute(waypoints) {
-  if (!routingConfig.googleMapsApiKey) {
+  if (!routingConfig.googleMapsApiKey || routingConfig.googleMapsApiKey.trim() === '') {
     throw new Error('Google Maps API key not configured');
   }
   
-  const origin = `${waypoints[0].lat},${waypoints[0].lng}`;
-  const destination = `${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lng}`;
+  const origin = encodeURIComponent(`${waypoints[0].lat},${waypoints[0].lng}`);
+  const destination = encodeURIComponent(`${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lng}`);
   const waypointsParam = waypoints.length > 2
-    ? waypoints.slice(1, -1).map(w => `${w.lat},${w.lng}`).join('|')
+    ? waypoints.slice(1, -1).map(w => encodeURIComponent(`${w.lat},${w.lng}`)).join('|')
     : '';
   
-  let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${routingConfig.googleMapsApiKey}`;
+  let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${encodeURIComponent(routingConfig.googleMapsApiKey)}`;
   if (waypointsParam) {
     url += `&waypoints=${waypointsParam}`;
   }
