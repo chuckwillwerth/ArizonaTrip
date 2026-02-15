@@ -2521,3 +2521,102 @@ newPlanName.addEventListener('keydown', (e) => {
     createPlanBtn.click();
   }
 });
+
+// ── Export to Google Maps ──
+document.getElementById('export-gmaps-btn')?.addEventListener('click', () => {
+  // Get locations to export based on current view
+  let locationsToExport = [];
+  
+  if (currentView === 'evelyn') {
+    // Export only Evelyn's locations
+    locationsToExport = locations.filter(loc => loc.type === 'evelyn');
+  } else if (currentView === 'planner' && plannerState.activeDay !== null) {
+    // Export locations from the active day in planner
+    const dayKey = `day${plannerState.activeDay}`;
+    const dayData = allPlans[currentPlanId]?.data?.[dayKey];
+    if (dayData?.stops) {
+      const stopIds = dayData.stops.map(s => s.id);
+      locationsToExport = locations.filter(loc => stopIds.includes(loc.id));
+    }
+  } else if (currentView === 'planner') {
+    // Export all locations in the current plan
+    const planData = allPlans[currentPlanId]?.data;
+    if (planData) {
+      const allStopIds = new Set();
+      for (let i = 1; i <= 6; i++) {
+        const dayData = planData[`day${i}`];
+        if (dayData?.stops) {
+          dayData.stops.forEach(stop => allStopIds.add(stop.id));
+        }
+      }
+      locationsToExport = locations.filter(loc => allStopIds.has(loc.id));
+    }
+  } else {
+    // Export all locations (default 'all' view)
+    locationsToExport = locations;
+  }
+  
+  if (locationsToExport.length === 0) {
+    showToast('⚠️ No locations to export');
+    return;
+  }
+  
+  // Google Maps URL format for multiple waypoints
+  // https://www.google.com/maps/dir/?api=1&destination=LAT,LNG&waypoints=LAT1,LNG1|LAT2,LNG2|...
+  // For multiple markers without a route, we use a search query
+  // https://www.google.com/maps/search/?api=1&query=LAT1,LNG1&query=LAT2,LNG2
+  
+  // Option 1: Create a custom Google My Maps URL with multiple markers
+  // This approach uses a search query for each location
+  
+  // Option 2: Use the simpler approach with markers using search
+  // Build a URL that shows all locations
+  // The best approach is to create a URL with all markers using the search parameter
+  
+  // Google Maps supports up to 10 waypoints in a directions URL
+  // For more locations, we'll create a custom "My Maps" style URL or use search
+  
+  // Let's use the search approach - open a map centered on the locations
+  // and include them as search queries (limited but works)
+  
+  // Better approach: Create a URL that can be used to save to Google Maps
+  // using the Data URI with KML or using multiple search queries
+  
+  // Simplest working solution: Create a URL with the first location and 
+  // show a message about how to add others, OR create a directions URL
+  
+  // Let's create a directions URL with up to 10 waypoints
+  if (locationsToExport.length === 1) {
+    // Single location - just show it on the map
+    const loc = locationsToExport[0];
+    const url = `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
+    window.open(url, '_blank');
+    showToast('🗺️ Opened in Google Maps');
+  } else {
+    // Multiple locations - create a route or multiple markers
+    // Google Maps directions API supports: origin, destination, and up to 25 waypoints (in paid tier)
+    // Free tier: up to 10 waypoints
+    
+    // Let's create a directions URL with waypoints
+    const origin = locationsToExport[0];
+    const destination = locationsToExport[locationsToExport.length - 1];
+    const waypoints = locationsToExport.slice(1, -1).slice(0, 23); // Max 23 waypoints (25 total - origin - destination)
+    
+    let url = `https://www.google.com/maps/dir/?api=1`;
+    url += `&origin=${origin.lat},${origin.lng}`;
+    url += `&destination=${destination.lat},${destination.lng}`;
+    
+    if (waypoints.length > 0) {
+      const waypointStr = waypoints.map(loc => `${loc.lat},${loc.lng}`).join('|');
+      url += `&waypoints=${encodeURIComponent(waypointStr)}`;
+    }
+    
+    window.open(url, '_blank');
+    
+    if (locationsToExport.length > 25) {
+      showToast(`🗺️ Opened ${Math.min(25, locationsToExport.length)} of ${locationsToExport.length} locations in Google Maps`);
+    } else {
+      showToast(`🗺️ Opened ${locationsToExport.length} locations in Google Maps`);
+    }
+  }
+});
