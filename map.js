@@ -1,3 +1,22 @@
+// ── Routing Configuration ──
+// This app supports two routing providers:
+// 
+// 1. OSRM (Open Source Routing Machine) - FREE, no API key required
+//    - Default provider
+//    - May show different distances/times compared to Google Maps
+//    - Uses OpenStreetMap data
+//
+// 2. Google Maps Directions API - Requires API key and billing
+//    - More accurate, matches Google Maps results
+//    - To use: Set provider to 'google' and add your API key below
+//    - Get key at: https://console.cloud.google.com/google/maps-apis/
+//
+const routingConfig = {
+  provider: 'osrm', // 'osrm' (free) or 'google' (requires API key)
+  googleMapsApiKey: '', // Add your Google Maps API key here for more accurate routing
+  osrmServer: 'https://router.project-osrm.org'
+};
+
 // ── Location Data ──
 const locations = [
   // Itinerary stops
@@ -1057,6 +1076,108 @@ function getAssignedIds() {
   return ids;
 }
 
+// ── Routing Provider Abstraction ──
+// Switch between OSRM (free, may differ from Google Maps) and Google Maps (requires API key)
+// Configure via routingConfig at the top of this file
+async function fetchRoute(waypoints) {
+  if (routingConfig.provider === 'google' && routingConfig.googleMapsApiKey) {
+    return await fetchGoogleRoute(waypoints);
+  }
+  return await fetchOSRMRoute(waypoints);
+}
+
+async function fetchOSRMRoute(waypoints) {
+  const coords = waypoints.map(w => `${w.lng},${w.lat}`).join(';');
+  const url = `${routingConfig.osrmServer}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  
+  if (data.code !== 'Ok' || !data.routes || !data.routes[0]) {
+    throw new Error('OSRM routing failed: ' + (data.message || data.code));
+  }
+  
+  const route = data.routes[0];
+  return {
+    distance: route.distance, // meters
+    duration: route.duration, // seconds
+    geometry: route.geometry.coordinates.map(c => [c[1], c[0]]) // flip to [lat,lng]
+  };
+}
+
+async function fetchGoogleRoute(waypoints) {
+  if (!routingConfig.googleMapsApiKey) {
+    throw new Error('Google Maps API key not configured');
+  }
+  
+  const origin = `${waypoints[0].lat},${waypoints[0].lng}`;
+  const destination = `${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lng}`;
+  const waypointsParam = waypoints.length > 2
+    ? waypoints.slice(1, -1).map(w => `${w.lat},${w.lng}`).join('|')
+    : '';
+  
+  let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${routingConfig.googleMapsApiKey}`;
+  if (waypointsParam) {
+    url += `&waypoints=${waypointsParam}`;
+  }
+  
+  const resp = await fetch(url);
+  const data = await resp.json();
+  
+  if (data.status !== 'OK' || !data.routes || !data.routes[0]) {
+    throw new Error(`Google Maps routing failed: ${data.status}${data.error_message ? ' - ' + data.error_message : ''}`);
+  }
+  
+  const route = data.routes[0];
+  
+  // Sum up all legs for total distance and duration
+  let totalDistance = 0;
+  let totalDuration = 0;
+  route.legs.forEach(leg => {
+    totalDistance += leg.distance.value; // meters
+    totalDuration += leg.duration.value; // seconds
+  });
+  
+  // Decode polyline for geometry
+  const points = decodeGooglePolyline(route.overview_polyline.points);
+  
+  return {
+    distance: totalDistance,
+    duration: totalDuration,
+    geometry: points
+  };
+}
+
+// Decode Google Maps polyline encoding
+function decodeGooglePolyline(encoded) {
+  const points = [];
+  let index = 0, lat = 0, lng = 0;
+  
+  while (index < encoded.length) {
+    let b, shift = 0, result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+    
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+    
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  
+  return points;
+}
+
 // Planner route polyline
 let plannerRouteLine = null;
 let plannerRouteStats = { distance: 0, duration: 0 };
@@ -1077,22 +1198,16 @@ async function calcPlannerRoute(dayNum) {
     return;
   }
 
-  const coords = waypoints.map(w => `${w.lng},${w.lat}`).join(';');
   try {
-    const resp = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
-    const data = await resp.json();
-    if (data.code === 'Ok' && data.routes && data.routes[0]) {
-      const route = data.routes[0];
-      plannerRouteStats.distance = route.distance;
-      plannerRouteStats.duration = route.duration;
-      const geojsonCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-      plannerRouteLine = L.polyline(geojsonCoords, {
-        color: '#6366f1',
-        weight: 4,
-        opacity: 0.8,
-        smoothFactor: 1
-      }).addTo(map);
-    }
+    const route = await fetchRoute(waypoints);
+    plannerRouteStats.distance = route.distance;
+    plannerRouteStats.duration = route.duration;
+    plannerRouteLine = L.polyline(route.geometry, {
+      color: '#6366f1',
+      weight: 4,
+      opacity: 0.8,
+      smoothFactor: 1
+    }).addTo(map);
   } catch (e) {
     console.error('Planner route error:', e);
   }
@@ -1797,22 +1912,12 @@ function selectMarker(locId) {
 
 async function fetchDrivingRoute(start, end) {
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
-      routeHint.textContent = '❌ Could not find a driving route';
-      setTimeout(() => routeHint.classList.remove('visible'), 3000);
-      return;
-    }
-
-    const route = data.routes[0];
-    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]); // flip [lng,lat] to [lat,lng]
+    const waypoints = [start, end];
+    const route = await fetchRoute(waypoints);
 
     // Draw the route
     if (drivingRoute) map.removeLayer(drivingRoute);
-    drivingRoute = L.polyline(coords, {
+    drivingRoute = L.polyline(route.geometry, {
       color: '#3b82f6',
       weight: 5,
       opacity: 0.8,
